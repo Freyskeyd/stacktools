@@ -1,3 +1,28 @@
+macro_rules! __impl_unbounded {
+    ($Lhs: ty, $Rhs: ident, $method: ident) => {
+        __impl_unbounded! { $Lhs, $Rhs, $method, Sized }
+    };
+    ($Lhs: ty, $Rhs: ident, $method: ident, $Bound: ident) => {
+        impl<T: $Bound + ::std::fmt::Debug> UnBoundedTrait<T> for $Lhs {
+            fn reserve(&mut self, additional: usize) {
+                self.inner.reserve(additional);
+                if self.capacity.is_some() {
+                    if self.capacity() < additional {
+                        self.capacity = Some(self.inner.len() + additional);
+                    }
+                }
+            }
+
+            fn capacity(&self) -> usize {
+                match self.capacity {
+                    Some(c) => c - self.inner.len(),
+                    _ => self.inner.capacity()
+                }
+            }
+
+        }
+    }
+}
 macro_rules! __impl_bounded {
     ($Lhs: ty, $Rhs: ident, $method: ident) => {
         __impl_bounded! { $Lhs, $Rhs, $method, Sized }
@@ -10,27 +35,11 @@ macro_rules! __impl_bounded {
                     capacity: Some(size)
                 }
             }
-
-            fn capacity(&self) -> usize {
-                match self.capacity {
-                    Some(c) => c - self.inner.len(),
-                    _ => self.inner.capacity()
-                }
-            }
-
             fn max_capacity(&self) -> usize {
                 self.capacity() + self.inner.len()
             }
 
-            fn reserve(&mut self, additional: usize) {
-                if self.capacity.is_some() {
-                    self.inner.reserve(additional);
-                    if self.capacity() < additional {
-                        self.capacity = Some(self.inner.len() + additional);
                     }
-                }
-            }
-        }
     }
 }
 

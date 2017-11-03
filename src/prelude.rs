@@ -11,9 +11,12 @@ pub trait NewTrait {
     fn new() -> Self;
 }
 
-pub trait BoundedTrait<T>: PushTrait<T> + CapacityTrait<T> {
-    fn bounded(size: usize) -> Self;
-    fn capacity(&self) -> usize;
+pub trait UnBoundedTrait<T>: NewTrait + PushTrait<T> + CapacityTrait<T> {
     fn reserve(&mut self, additional: usize);
+    fn capacity(&self) -> usize;
+}
+
+pub trait BoundedTrait<T>: UnBoundedTrait<T> {
+    fn bounded(size: usize) -> Self;
     fn max_capacity(&self) -> usize;
 }

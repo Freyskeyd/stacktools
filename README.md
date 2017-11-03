@@ -19,8 +19,11 @@ stacktools = "0.1"
 ```rust
 extern crate stacktools;
 
+use stacktools::prelude::*;
+use stacktools::Queue;
+
 fn main() {
-    let mut queue: Queue<i32> = stacktools::Queue::new();
+    let mut queue: Queue<i32> = Queue::new();
 
     assert!(queue.len() == 0);
 
@@ -47,6 +50,11 @@ With PriorityQueue:
 ```rust
 extern crate stacktools;
 
+use stacktools::prelude::*;
+use stacktools::PriorityQueue;
+
+use std::cmp::Ordering;
+
 #[derive(Copy, Eq, Debug, PartialOrd, PartialEq)]
 enum Priority {
     Trivial = 1,
@@ -55,7 +63,7 @@ enum Priority {
 }
 
 impl Clone for Priority {
-#[inline]
+    #[inline]
     fn clone(&self) -> Priority {
         *self
     }
@@ -87,7 +95,7 @@ impl PartialOrd for PriorityMessage {
 }
 
 fn main() {
-    let mut queue: PriorityQueue<PriorityMessage> = stacktools::PriorityQueue::new();
+    let mut queue: PriorityQueue<PriorityMessage> = PriorityQueue::new();
 
     assert!(queue.len() == 0);
 
