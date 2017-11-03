@@ -9,16 +9,22 @@ mod macros;
 
 use prelude::*;
 
+#[derive(Clone)]
 pub struct Queue<T> {
     inner: VecDeque<T>,
+    capacity: Option<usize>,
 }
 
+#[derive(Clone)]
 pub struct Stack<T> {
     inner: VecDeque<T>,
+    capacity: Option<usize>,
 }
 
+#[derive(Clone)]
 pub struct PriorityQueue<T: Ord> {
     inner: BinaryHeap<T>,
+    capacity: Option<usize>,
 }
 
 impl<T> Queue<T> {
@@ -42,6 +48,19 @@ where
     }
 }
 
+
+__impl_push_trait! { PriorityQueue<T>, push, Ord }
+__impl_push_trait! { Stack<T>, push_front }
+__impl_push_trait! { Queue<T>, push_back }
+
+__impl_unbounded! { PriorityQueue<T>, BinaryHeap, with_capacity, Ord }
+__impl_unbounded! { Queue<T>, VecDeque, with_capacity }
+__impl_unbounded! { Stack<T>, VecDeque, with_capacity }
+
+__impl_bounded! { PriorityQueue<T>, BinaryHeap, with_capacity, Ord }
+__impl_bounded! { Queue<T>, VecDeque, with_capacity }
+__impl_bounded! { Stack<T>, VecDeque, with_capacity }
+
 __impl_capacity_trait! { PriorityQueue<T>, Ord }
 __impl_capacity_trait! { Queue<T> }
 __impl_capacity_trait! { Stack<T> }
@@ -49,10 +68,6 @@ __impl_capacity_trait! { Stack<T> }
 __impl_new! { PriorityQueue<T>, Ord }
 __impl_new! { Queue<T> }
 __impl_new! { Stack<T> }
-
-__impl_push_trait! { PriorityQueue<T>, push, Ord }
-__impl_push_trait! { Stack<T>, push_front }
-__impl_push_trait! { Queue<T>, push_back }
 
 __impl_iterator! { Queue<T>, pop_front }
 __impl_iterator! { Stack<T>, pop_front }
@@ -261,5 +276,147 @@ mod tests {
         assert!(prio.len() == 0);
 
         assert_eq!(None, prio.next());
+    }
+
+    macro_rules! execute_circular_test_unbounded {
+        ($n: expr, $test: ident) => {
+            $test(Stack::new());
+            $test(Queue::new());
+            $test(PriorityQueue::new());
+        }
+    }
+
+    macro_rules! execute_circular_test_bounded {
+        ($n: expr, $test: ident) => {
+            $test(Stack::bounded($n));
+            $test(Queue::bounded($n));
+            $test(PriorityQueue::bounded($n));
+        }
+    }
+
+    #[test]
+    fn unbounded() {
+        fn test<T: UnBoundedTrait<i32>>(mut x: T) {
+            assert_eq!(x.len(), 0);
+            x.push(1);
+            x.push(2);
+            x.push(3);
+            x.push(4);
+            x.push(5);
+            x.push(6);
+            assert_eq!(x.len(), 6);
+        };
+
+        execute_circular_test_unbounded! {5, test}
+    }
+
+    #[test]
+    fn unbounded_reserve() {
+        fn test<T: UnBoundedTrait<i32>>(mut x: T) {
+            assert_eq!(x.len(), 0);
+            x.reserve(5);
+            assert!(x.capacity() >= 5, format!("{:?}", x.capacity()));
+            x.push(1);
+            assert!(x.capacity() >= 5, format!("{:?}", x.capacity()));
+            assert_eq!(x.len(), 1);
+            x.reserve(5);
+            assert!(x.capacity() >= 7, format!("{:?}", x.capacity()));
+            assert_eq!(x.len(), 1);
+        };
+
+        execute_circular_test_unbounded! {5, test}
+    }
+
+    #[test]
+    fn bounded() {
+        fn test<T: BoundedTrait<i32>>(mut x: T) {
+            assert_eq!(x.len(), 0);
+            x.push(1);
+            x.push(2);
+            x.push(3);
+            x.push(4);
+            x.push(5);
+            x.push(6);
+            assert_eq!(x.len(), 5);
+        };
+
+        execute_circular_test_bounded! {5, test}
+    }
+
+    #[test]
+    fn bounded_capacity() {
+        fn test<T: BoundedTrait<i32>>(x: T) {
+            assert_eq!(x.len(), 0);
+            assert_eq!(x.capacity(), 5);
+        };
+
+        execute_circular_test_bounded! {5, test}
+    }
+
+    #[test]
+    fn bounded_reserve() {
+        fn test<T: BoundedTrait<i32>>(mut x: T) {
+            assert_eq!(x.len(), 0);
+            x.reserve(5);
+            assert_eq!(x.capacity(), 5);
+            x.push(1);
+            assert_eq!(x.capacity(), 4);
+            assert_eq!(x.len(), 1);
+        };
+
+        execute_circular_test_bounded! {5, test}
+    }
+
+    #[test]
+    fn bounded_queue_capacity_hard() {
+        let mut queue: Queue<i32> = Queue::bounded(10);
+        queue.push(1);
+        queue.push(2);
+
+        assert_eq!(queue.len(), 2);
+        assert_eq!(queue.capacity(), 8);
+
+        queue.push(3);
+
+        assert_eq!(queue.len(), 3);
+        assert_eq!(queue.capacity(), 7);
+
+        let _ = queue.next();
+
+        assert_eq!(queue.len(), 2);
+        assert_eq!(queue.capacity(), 8);
+        let _ = queue.next();
+        let _ = queue.next();
+
+        assert_eq!(queue.len(), 0);
+        assert_eq!(queue.capacity(), 10);
+
+        queue.reserve(15);
+
+        assert_eq!(queue.len(), 0);
+        assert_eq!(queue.capacity(), 15);
+
+        (0..10).for_each(|x| queue.push(x));
+
+        assert_eq!(queue.len(), 10);
+        assert_eq!(queue.capacity(), 5);
+        assert_eq!(queue.max_capacity(), 15);
+
+        queue.reserve(10);
+
+        assert_eq!(queue.len(), 10);
+        assert_eq!(queue.capacity(), 10);
+        assert_eq!(queue.max_capacity(), 20);
+
+        queue.reserve(5);
+
+        assert_eq!(queue.len(), 10);
+        assert_eq!(queue.capacity(), 10);
+        assert_eq!(queue.max_capacity(), 20);
+
+        (0..20).for_each(|x| queue.push(x));
+
+        assert_eq!(queue.len(), 20);
+        assert_eq!(queue.max_capacity(), 20);
     }
 }
