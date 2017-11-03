@@ -9,12 +9,6 @@ homepage = "https://github.com/Freyskeyd/stacktools"
 documentation = "http://docs.rs/stacktools/"
 readme = "README.md"
 keywords = ["data", "collection", "structure", "queue", "stack"]
-build = "build.rs"
 
 [dependencies]
 
-[build-dependencies]
-skeptic = "0.13"
-
-[dev-dependencies]
-skeptic = "0.13"

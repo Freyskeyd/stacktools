@@ -19,7 +19,6 @@ macro_rules! __impl_unbounded {
                     _ => self.inner.capacity()
                 }
             }
-
         }
     }
 }
@@ -38,8 +37,7 @@ macro_rules! __impl_bounded {
             fn max_capacity(&self) -> usize {
                 self.capacity() + self.inner.len()
             }
-
-                    }
+        }
     }
 }
 
