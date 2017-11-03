@@ -53,6 +53,10 @@ __impl_push_trait! { PriorityQueue<T>, push, Ord }
 __impl_push_trait! { Stack<T>, push_front }
 __impl_push_trait! { Queue<T>, push_back }
 
+__impl_unbounded! { PriorityQueue<T>, BinaryHeap, with_capacity, Ord }
+__impl_unbounded! { Queue<T>, VecDeque, with_capacity }
+__impl_unbounded! { Stack<T>, VecDeque, with_capacity }
+
 __impl_bounded! { PriorityQueue<T>, BinaryHeap, with_capacity, Ord }
 __impl_bounded! { Queue<T>, VecDeque, with_capacity }
 __impl_bounded! { Stack<T>, VecDeque, with_capacity }
@@ -274,8 +278,16 @@ mod tests {
         assert_eq!(None, prio.next());
     }
 
+    macro_rules! execute_circular_test_unbounded {
+        ($n: expr, $test: ident) => {
+            $test(Stack::new());
+            $test(Queue::new());
+            $test(PriorityQueue::new());
+        }
+    }
+
     macro_rules! execute_circular_test_bounded {
-        ($T: ty, $n: expr, $test: ident) => {
+        ($n: expr, $test: ident) => {
             $test(Stack::bounded($n));
             $test(Queue::bounded($n));
             $test(PriorityQueue::bounded($n));
@@ -283,8 +295,41 @@ mod tests {
     }
 
     #[test]
+    fn unbounded() {
+        fn test<T: UnBoundedTrait<i32>>(mut x: T) {
+            assert_eq!(x.len(), 0);
+            x.push(1);
+            x.push(2);
+            x.push(3);
+            x.push(4);
+            x.push(5);
+            x.push(6);
+            assert_eq!(x.len(), 6);
+        };
+
+        execute_circular_test_unbounded! {5, test}
+    }
+
+    #[test]
+    fn unbounded_reserve() {
+        fn test<T: UnBoundedTrait<i32>>(mut x: T) {
+            assert_eq!(x.len(), 0);
+            x.reserve(5);
+            assert!(x.capacity() >= 5, format!("{:?}", x.capacity()));
+            x.push(1);
+            assert!(x.capacity() >= 5, format!("{:?}", x.capacity()));
+            assert_eq!(x.len(), 1);
+            x.reserve(5);
+            assert!(x.capacity() >= 7, format!("{:?}", x.capacity()));
+            assert_eq!(x.len(), 1);
+        };
+
+        execute_circular_test_unbounded! {5, test}
+    }
+
+    #[test]
     fn bounded() {
-        fn test<X, T: PushTrait<i32> + CapacityTrait<X>>(mut x: T) {
+        fn test<T: BoundedTrait<i32>>(mut x: T) {
             assert_eq!(x.len(), 0);
             x.push(1);
             x.push(2);
@@ -295,7 +340,7 @@ mod tests {
             assert_eq!(x.len(), 5);
         };
 
-        execute_circular_test_bounded! {i32, 5, test}
+        execute_circular_test_bounded! {5, test}
     }
 
     #[test]
@@ -305,7 +350,7 @@ mod tests {
             assert_eq!(x.capacity(), 5);
         };
 
-        execute_circular_test_bounded! {i32, 5, test}
+        execute_circular_test_bounded! {5, test}
     }
 
     #[test]
@@ -319,7 +364,7 @@ mod tests {
             assert_eq!(x.len(), 1);
         };
 
-        execute_circular_test_bounded! {i32, 5, test}
+        execute_circular_test_bounded! {5, test}
     }
 
     #[test]
