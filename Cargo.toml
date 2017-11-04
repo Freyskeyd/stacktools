@@ -11,3 +11,4 @@ readme = "README.md"
 keywords = ["data", "collection", "structure", "queue", "stack"]
 
 [dependencies]
+

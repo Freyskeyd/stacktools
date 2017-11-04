@@ -1,3 +1,46 @@
+macro_rules! __impl_unbounded {
+    ($Lhs: ty, $Rhs: ident, $method: ident) => {
+        __impl_unbounded! { $Lhs, $Rhs, $method, Sized }
+    };
+    ($Lhs: ty, $Rhs: ident, $method: ident, $Bound: ident) => {
+        impl<T: $Bound + ::std::fmt::Debug> UnBoundedTrait<T> for $Lhs {
+            fn reserve(&mut self, additional: usize) {
+                self.inner.reserve(additional);
+                if self.capacity.is_some() {
+                    if self.capacity() < additional {
+                        self.capacity = Some(self.inner.len() + additional);
+                    }
+                }
+            }
+
+            fn capacity(&self) -> usize {
+                match self.capacity {
+                    Some(c) => c - self.inner.len(),
+                    _ => self.inner.capacity()
+                }
+            }
+        }
+    }
+}
+macro_rules! __impl_bounded {
+    ($Lhs: ty, $Rhs: ident, $method: ident) => {
+        __impl_bounded! { $Lhs, $Rhs, $method, Sized }
+    };
+    ($Lhs: ty, $Rhs: ident, $method: ident, $Bound: ident) => {
+        impl<T: $Bound + ::std::fmt::Debug> BoundedTrait<T> for $Lhs {
+            fn bounded(size: usize) -> Self {
+                Self {
+                    inner: $Rhs::$method(size),
+                    capacity: Some(size)
+                }
+            }
+            fn max_capacity(&self) -> usize {
+                self.capacity() + self.inner.len()
+            }
+        }
+    }
+}
+
 macro_rules! __impl_new {
     ($Lhs: ty) => {
         __impl_new! { $Lhs, Sized }
@@ -33,7 +76,8 @@ macro_rules! __impl_default {
         impl<T: $Bound> Default for $Lhs {
             fn default() -> Self {
                 Self {
-                    inner: $Rhs::new()
+                    inner: $Rhs::new(),
+                    capacity: None,
                 }
             }
         }
@@ -47,7 +91,11 @@ macro_rules! __impl_push_trait {
     ($Lhs: ty, $method: ident, $Bound: ident) => {
         impl<T: $Bound> PushTrait<T> for $Lhs {
             fn push(&mut self, value: T) {
-                self.inner.$method(value);
+                match self.capacity {
+                    Some(c) if c > self.inner.len() => self.inner.$method(value),
+                    None => self.inner.$method(value),
+                    _ => {}
+                }
             }
         }
     }
