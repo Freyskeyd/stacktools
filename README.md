@@ -51,30 +51,9 @@ With PriorityQueue:
 extern crate stacktools;
 
 use stacktools::prelude::*;
-use stacktools::PriorityQueue;
+use stacktools::{PriorityQueue, Priority};
 
 use std::cmp::Ordering;
-
-#[derive(Copy, Eq, Debug, PartialOrd, PartialEq)]
-enum Priority {
-    Trivial = 1,
-    Normal,
-    Critical,
-}
-
-impl Clone for Priority {
-    #[inline]
-    fn clone(&self) -> Priority {
-        *self
-    }
-}
-
-impl Ord for Priority {
-#[inline]
-    fn cmp(&self, other: &Priority) -> Ordering {
-        (*self as usize).cmp(&(*other as usize))
-    }
-}
 
 #[derive(Eq, PartialEq, Debug)]
 struct PriorityMessage {
