@@ -1,4 +1,5 @@
 use std::cmp::Ord;
+use std::cmp::Ordering;
 use std::collections::{BinaryHeap, VecDeque};
 use std::collections::binary_heap;
 use std::collections::vec_deque;
@@ -25,6 +26,21 @@ pub struct Stack<T> {
 pub struct PriorityQueue<T: Ord> {
     inner: BinaryHeap<T>,
     capacity: Option<usize>,
+}
+
+#[derive(Clone, Copy, Eq, Debug, PartialOrd, PartialEq)]
+pub enum Priority {
+    Trivial = 1,
+    Normal,
+    Critical,
+    Blocker,
+}
+
+impl Ord for Priority {
+    #[inline]
+    fn cmp(&self, other: &Priority) -> Ordering {
+        (*self as usize).cmp(&(*other as usize))
+    }
 }
 
 impl<T> Queue<T> {
@@ -141,27 +157,6 @@ mod tests {
         assert!(lifo.len() == 0);
 
         assert_eq!(None, lifo.next());
-    }
-
-    #[derive(Copy, Eq, Debug, PartialOrd, PartialEq)]
-    enum Priority {
-        Trivial = 1,
-        Normal,
-        Critical,
-    }
-
-    impl Clone for Priority {
-        #[inline]
-        fn clone(&self) -> Priority {
-            *self
-        }
-    }
-
-    impl Ord for Priority {
-        #[inline]
-        fn cmp(&self, other: &Priority) -> Ordering {
-            (*self as usize).cmp(&(*other as usize))
-        }
     }
 
     #[derive(Eq, PartialEq, Debug)]
